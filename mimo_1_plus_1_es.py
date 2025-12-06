@@ -117,31 +117,31 @@ def calculate_fitness(vector_real, Mt, Nt, U, Q, P_max, gamma_u, H_U, A_resp, se
     return float(fitness), float(sensing_snr), float(total_penalty)
 
 # ================== 5. (1+1)-EVOLUTION STRATEGY ==================
-def initialize_parent(dimension, max_power):
-    amplitude_limit = np.sqrt(max_power / (dimension // 2))
-    initial_solution = uniform(-amplitude_limit, amplitude_limit, dimension)
+def initialize_parent():
+    amplitude_limit = np.sqrt(MAX_POWER / (DIMENSION // 2))
+    initial_solution = uniform(-amplitude_limit, amplitude_limit, DIMENSION)
     return initial_solution
 
-def mutation(parent, sigma, mu):
-    perturbation = normal(mu, sigma, parent.shape)
+def mutation(parent):
+    perturbation = normal(ES_MU, ES_SIGMA_INIT, parent.shape)
     offspring = parent + perturbation
     return offspring
 
-def evolution_strategy_1_plus_1(dimension, max_iters, sigma_init, mu, system_params):
-    P_MAX = system_params['P_max'] # Access P_max from system_params
-    parent = initialize_parent(dimension, P_MAX)
+def es_1_plus_1(system_params):
+    parent = initialize_parent()
     parent_fitness, parent_snr, parent_penalty = calculate_fitness(
         parent, **system_params
     )
     best_solution = parent
     best_fitness = parent_fitness
-    current_sigma = sigma_init
+
     fitness_history = [parent_fitness]
     snr_history = [parent_snr]
     penalty_history = [parent_penalty]
     print(f"Bắt đầu (1+1)-ES. Fitness khởi tạo: {parent_fitness:.4e}")
-    for i in range(max_iters):
-        offspring = mutation(parent, current_sigma, mu)
+
+    for i in range(ES_MAX_ITERS):
+        offspring = mutation(parent)
         offspring_fitness, offspring_snr, offspring_penalty = calculate_fitness(
             offspring, **system_params
         )
@@ -151,12 +151,13 @@ def evolution_strategy_1_plus_1(dimension, max_iters, sigma_init, mu, system_par
             if parent_fitness > best_fitness:
                 best_fitness = parent_fitness
                 best_solution = parent
+
         fitness_history.append(parent_fitness)
         snr_history.append(offspring_snr)
         penalty_history.append(offspring_penalty)
         if (i + 1) % 500 == 0:
-            print(f"Lặp {i + 1}/{max_iters}: Fitness tốt nhất = {best_fitness:.4e}")
-    print(f"\nOptimization finished after {max_iters} iterations.")
+            print(f"Lặp {i + 1}/{ES_MAX_ITERS}: Fitness tốt nhất = {best_fitness:.4e}")
+    print(f"\nOptimization finished after {ES_MAX_ITERS} iterations.")
     print(f"Final Best Fitness (SNR - Penalty): {best_fitness:.4e}")
     # Trả về vector phức tạp và lịch sử hội tụ
     return vector_to_complex_beamforming(best_solution, Mt, Nt, S), fitness_history, snr_history, penalty_history
@@ -176,8 +177,8 @@ def main():
         'A_resp': A_RESP_PL,
         'sensing_params': SENSING_PARAMS
     }
-    final_beamforming_solution, fitness_history, snr_history, penalty_history = evolution_strategy_1_plus_1(
-        DIMENSION, ES_MAX_ITERS, ES_SIGMA_INIT, ES_MU, system_parameters
+    final_beamforming_solution, fitness_history, snr_history, penalty_history = es_1_plus_1(
+        system_parameters
     )
     print("\n===============================================")
     print("KẾT QUẢ ĐỊNH DẠNG CHÙM TIA TỐI ƯU")

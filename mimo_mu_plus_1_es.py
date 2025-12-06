@@ -128,12 +128,12 @@ class Individual:
         self.snr = snr
         self.penalty = penalty
 
-def initialize_population(mu, dimension, sigma_init, max_power):
+def initialize_population():
     population = []
-    amplitude_limit = np.sqrt(max_power / (dimension // 2))
-    for _ in range(mu):
-        x = uniform(-amplitude_limit, amplitude_limit, dimension)
-        sigma = np.full(dimension, sigma_init)
+    amplitude_limit = np.sqrt(MAX_POWER / (DIMENSION // 2))
+    for _ in range(MU):
+        x = uniform(-amplitude_limit, amplitude_limit, DIMENSION)
+        sigma = np.full(DIMENSION, ES_SIGMA_INIT)
         individual = Individual(x, sigma)
         population.append(individual)
     return population
@@ -149,37 +149,45 @@ def mutate_individual(parent):
     new_x = parent.x + new_sigma * normal(ES_MU, 1, dimension)
     return Individual(new_x, new_sigma)
 
-def evolution_strategy_mu_plus_1(dimension, mu, max_iters, sigma_init, system_params):
-    P_MAX = system_params['P_max'] # Access P_max from system_params
-    population = initialize_population(mu, dimension, sigma_init, P_MAX)
+def evolution_strategy_mu_plus_1(system_params):
+    population = initialize_population()
+
     fitness_history = []
     snr_history = []
     penalty_history = []
+
     for individual in population:
-        individual.fitness, individual.snr, individual.penalty = calculate_fitness(individual.x, **system_params)
+        individual.fitness, individual.snr, individual.penalty = calculate_fitness(
+            individual.x, **system_params
+        )
     population.sort(key=lambda ind: ind.fitness, reverse=True)
     best_individual = population[0]
+
     fitness_history.append(best_individual.fitness)
     snr_history.append(best_individual.snr)
     penalty_history.append(best_individual.penalty)
-    print(f"Bắt đầu (μ+1)-ES (μ={mu}). Fitness tốt nhất khởi tạo: {best_individual.fitness:.4e}")
-    for i in range(max_iters):
-        parent_index = randint(mu)
+    print(f"Bắt đầu (μ+1)-ES (μ={MU}). Fitness tốt nhất khởi tạo: {best_individual.fitness:.4e}")
+
+    for i in range(ES_MAX_ITERS):
+        parent_index = randint(MU)
         parent = population[parent_index]
         offspring = mutate_individual(parent)
-        offspring.fitness, offspring.snr, offspring.penalty = calculate_fitness(offspring.x, **system_params)
+        offspring.fitness, offspring.snr, offspring.penalty = calculate_fitness(
+            offspring.x, **system_params
+        )
         combined_population = population + [offspring]
         combined_population.sort(key=lambda ind: ind.fitness, reverse=True)
-        population = combined_population[:mu]
+        population = combined_population[:MU]
         current_best = population[0]
         if current_best.fitness > best_individual.fitness:
             best_individual = current_best
+
         fitness_history.append(best_individual.fitness)
         snr_history.append(best_individual.snr)
         penalty_history.append(best_individual.penalty)
         if (i + 1) % 500 == 0:
-            print(f"Lặp {i + 1}/{max_iters}: Fitness tốt nhất = {best_individual.fitness:.4e}")
-    print(f"\nOptimization finished after {max_iters} iterations.")
+            print(f"Lặp {i + 1}/{ES_MAX_ITERS}: Fitness tốt nhất = {best_individual.fitness:.4e}")
+    print(f"\nOptimization finished after {ES_MAX_ITERS} iterations.")
     print(f"Final Best Fitness: {best_individual.fitness:.4e}")
     return vector_to_complex_beamforming(best_individual.x, Mt, Nt, S), fitness_history, snr_history, penalty_history
 
@@ -192,13 +200,13 @@ def main():
         'U': U,
         'Q': Q,
         'P_max': MAX_POWER,
-        'gamma_u': MIN_SINR_THRES, # Changed key from 'MIN_SINR_THRES' to 'gamma_u'
-        'H_U': H_U_PL,             # Changed key from 'H_U_PL' to 'H_U'
-        'A_resp': A_RESP_PL,       # Changed key from 'A_RESP_PL' to 'A_resp'
-        'sensing_params': SENSING_PARAMS # Changed key from 'SENSING_PARAMS' to 'sensing_params'
+        'gamma_u': MIN_SINR_THRES, 
+        'H_U': H_U_PL,             
+        'A_resp': A_RESP_PL,       
+        'sensing_params': SENSING_PARAMS 
     }
     final_beamforming_solution, fitness_history, snr_history, penalty_history = evolution_strategy_mu_plus_1(
-        DIMENSION, MU, ES_MAX_ITERS, ES_SIGMA_INIT, system_parameters # Changed ES_MAX_ITERS to MU
+        system_parameters 
     )
     print("\n===============================================")
     print("KẾT QUẢ ĐỊNH DẠNG CHÙM TIA TỐI ƯU")
