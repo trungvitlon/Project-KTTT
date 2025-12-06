@@ -149,7 +149,7 @@ def mutate_individual(parent):
     new_x = parent.x + new_sigma * normal(ES_MU, 1, dimension)
     return Individual(new_x, new_sigma)
 
-def evolution_strategy_mu_plus_1(system_params):
+def es_mu_plus_1(system_params):
     population = initialize_population()
 
     fitness_history = []
@@ -205,7 +205,7 @@ def main():
         'A_resp': A_RESP_PL,       
         'sensing_params': SENSING_PARAMS 
     }
-    final_beamforming_solution, fitness_history, snr_history, penalty_history = evolution_strategy_mu_plus_1(
+    final_beamforming_solution, fitness_history, snr_history, penalty_history = es_mu_plus_1(
         system_parameters 
     )
     print("\n===============================================")
